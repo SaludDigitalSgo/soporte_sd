@@ -1,0 +1,188 @@
+{% extends "@UVDeskSupportCenter/Templates/layout.html.twig" %}
+
+{% block title %}{{ 'Customer Login'|trans }}{% endblock %}
+{% block ogtitle %}{{ 'Customer Login'|trans }}{% endblock %}
+{% block twtitle %}{{ 'Customer Login'|trans }}{% endblock %}
+{% block metaDescription %}{% trans %}customer.login.metaDescription{% endtrans %}{% endblock %}
+{% block metaKeywords %}{% trans %}customer.login.metaKeywords{% endtrans %}{% endblock %}
+
+{% set recaptchaDetail = recaptcha_service.getRecaptchaDetails() %}
+
+{% block body %}
+
+<link href="https://fonts.googleapis.com/css2?family=Karla:wght@200;300;400;500&family=Poppins:wght@200;300;400;500;600&family=Rubik:wght@800&display=swap" rel="stylesheet">	
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;500;600;700&display=swap" rel="stylesheet">	
+<style>
+    .uv-paper-article {
+        display: flex;
+        height: 100vh;
+        justify-content: center;
+    }
+
+    .uv-paper-article .uv-paper-section {
+        margin-top: 200px;
+        display: flex;
+        height: 100vh;
+        justify-content: center; 
+    }
+
+     .uv-paper-article .uv-paper-section h1 {
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 700;
+    	color: #A5939F;
+    	padding-bottom: 40px;
+    	font-size: 2rem;
+     }
+
+    {# .uv-form  {
+        text-align: center
+    } #}
+
+    .uv-form input{
+        border: 0;
+        border-radius: 0;
+        border-bottom: 1px solid #120909 ;
+        background: transparent;
+        outline: none;
+        text-align: left;
+        font-size: 16.5px;
+        width: 100%;
+        color: #120909;
+        padding: .6em;
+        padding-left: 0;
+        margin-bottom: 30px
+    }
+
+::placeholder {
+    color: #120909 !important;
+    font-family: 'Karla', sans-serif !important;
+}
+
+.parrafo p {
+    padding-left: 25px !important;
+    margin-bottom:50px
+}
+
+.uv-form {
+    padding-left: 65px !important
+}
+
+.uv-get-into {
+    display: flex;
+    justify-content: center
+}
+
+
+</style>
+
+    <div class="uv-paper-article uv-paper-form">
+        <div class="uv-paper-section">
+            <form action="{{ path('helpdesk_customer_login') }}" method="post" id="loginForm">
+                <section>
+                    <h1>{{ 'Sign In to %websitename%'|trans({ '%websitename%': '<span class="uv-brand">' ~ websiteDetails.name|e ~ '</span>' })|raw }}</h1>
+                    <div class="parrafo">
+                        <p>{{ 'If you have ever contacted our support previously, your account would have already been created.'|trans }}</p>
+                    </div>
+
+                    <div class="uv-form">
+                        <div class="uv-element-block">
+                            <input  type="email" name="_username" placeholder='Email' >
+                        </div>
+
+                        <div class="uv-element-block">
+                           
+                            <div class="uv-field-block uv-relative">
+                                <a class="uv-forgot-pwd" href="{{ path('helpdesk_forgot_account_password') }}" tabIndex="-1">{{ 'Forgot Password?'|trans }}</a>
+                                <input type="password" name="_password" placeholder='Contraseña' style="margin-bottom:90px">
+                            </div>
+                        </div>
+                        {% if recaptchaDetail and recaptchaDetail.isActive == true %}
+							<div class="clearfix"></div>
+							<div class="g-recaptcha" data-sitekey="{{ recaptchaDetail.siteKey }}"></div>
+							<div class="clearfix"></div>
+                        {% else %}
+                            <!-- Recaptcha will not support -->
+                        {% endif %}
+                        <div class="uv-element-block uv-get-into">
+                             <button class="uv-btn">{{ 'Sign In'|trans }}</button>     
+                        </div>
+
+                       
+                    </div>
+                </section>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block footer %}
+    {{ parent() }}
+    {% if recaptchaDetail and recaptchaDetail.isActive == true %}
+        <script src='https://www.google.com/recaptcha/api.js'></script>
+    {% endif %}
+
+    <script type="text/javascript">
+        $(function () {
+            var LoginModel = Backbone.Model.extend({
+                validation: {
+                    '_username': [{
+                        required: true,
+                        msg: '{{ "This field is mandatory"|trans }}'
+                    },{
+                        pattern: 'email',
+                        msg: '{{ "This is not a valid email address"|trans }}'
+                    }],
+                    '_password': [{
+                        required: true,
+                        msg: '{{ "This field is mandatory"|trans }}'
+                    },{
+                        minLength: 8,
+                        msg: '{{ "Password must contains 8 Characters"|trans }}'
+                    }],
+                    {% if recaptchaDetail and recaptchaDetail.isActive == true %}
+                        'g-recaptcha-response' : {
+                            fn: function(value) {
+                                if(grecaptcha.getResponse().length > 0)
+                                    return false;
+                                else
+                                    return true;
+                            },
+                            msg : '{{ "Please select CAPTCHA"|trans }}'
+                        }
+				    {% endif %}
+                }
+            });
+
+            var LoginForm = Backbone.View.extend({
+                events: {
+                    'click .uv-btn': 'submit',
+                    'blur input': 'formChanegd'
+                },
+                initialize: function () {
+                    Backbone.Validation.bind(this);
+                    {% if error.messageKey is defined %}
+                        app.appView.renderResponseAlert({'alertClass': 'danger', 'alertMessage': '{{ error.messageKey|trans}}'})
+                    {% endif %}
+                },
+                formChanegd: function(e) {
+			    	this.model.set(Backbone.$(e.currentTarget).attr('name'), Backbone.$(e.currentTarget).val())
+			    	this.model.isValid([Backbone.$(e.currentTarget).attr('name')])
+			    },
+                submit: function (e) {
+                    e.preventDefault();
+
+                    var data = this.$el.serializeObject();
+                    this.model.set(data);
+                    if(this.model.isValid(true)){
+                        this.$el.submit();
+                    }
+                }
+            });
+
+            var Login = new LoginForm({
+		        el: $('#loginForm'),
+		        model: new LoginModel()
+		    });
+        });
+    </script>
+{% endblock %}

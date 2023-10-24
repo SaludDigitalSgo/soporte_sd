@@ -1,0 +1,11 @@
+swiftmailer:
+    default_mailer: mailer_2874
+    mailers:
+        mailer_2874:
+            transport: gmail
+            username: noreplysaluddigitalsde@gmail.com
+            password: YXlpdSBldGpnIHB2c2sgY2FzdA==
+            # sender_address: ~
+            # delivery_addresses: ~
+            disable_delivery: false
+
